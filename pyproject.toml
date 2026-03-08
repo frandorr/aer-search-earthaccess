@@ -3,14 +3,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "aer-search-earthaccess-root"
+name = "aer"
 version = "0.1.0"
 description = "A Python Polylith template code repo"
 readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
-authors = [{ name = "Your Name" }]
+authors = [{ name = "Fran Dorr" }]
 dependencies = ["aer-core"]
+
+[project.entry-points."aer.plugins"]
+search_earthaccess = "aer.search_earthaccess.core:search_earthaccess"
 
 [tool.uv]
 managed = true
