@@ -7,6 +7,10 @@ A Polylith plugin for the `aer` ecosystem that integrates `earthaccess` to seaml
 ```bash
 pip install aer-search-earthaccess
 ```
+or
+```bash
+uv add aer-search-earthaccess
+```
 
 ## Usage
 
