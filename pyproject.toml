@@ -47,4 +47,5 @@ extraPaths = ["components/", "bases/"]
 dev = [
     "polylith-cli>=1.43.0,<2.0.0",
     "pytest>=9.0.2,<10.0.0",
+    "python-semantic-release>=10.5.3,<11.0.0",
 ]
