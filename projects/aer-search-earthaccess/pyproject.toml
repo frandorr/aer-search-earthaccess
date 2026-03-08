@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling", "hatch-polylith-bricks"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aer-search-earthaccess"
+version = "0.1.0"
+description = "Polylith project for the earthaccess search plugin"
+authors = [{ name = "Fran Dorr" }]
+
+requires-python = ">=3.13"
+
+dependencies = [
+    "aer-core>=1.1.0,<2.0.0",
+    "attrs>=25.4,<26",
+    "earthaccess>=0.16,<0.17",
+    "geopandas>=1.1.2,<2",
+    "pandas>=3.0.1,<4",
+    "pandera[geopandas]>=0.24,<0.25",
+    "shapely>=2.1.2,<3",
+    "structlog>=25.5,<26",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["aer-search-earthaccess"]
+
+[tool.hatch.build.hooks.polylith-bricks]
+
+[tool.polylith.bricks]
