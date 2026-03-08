@@ -21,6 +21,9 @@ dependencies = [
     "structlog>=25.5,<26",
 ]
 
+[project.entry-points."aer.plugins"]
+search_earthaccess = "aer.search_earthaccess.core:search_earthaccess"
+
 [tool.hatch.build.targets.wheel]
 packages = ["aer-search-earthaccess"]
 
