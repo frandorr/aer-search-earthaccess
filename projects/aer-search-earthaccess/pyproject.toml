@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "aer-search-earthaccess"
 version = "1.0.2"
 description = "Polylith project for the earthaccess search plugin"
+readme = "README.md"
 authors = [{ name = "Fran Dorr" }]
 
 requires-python = ">=3.13"
@@ -20,13 +21,16 @@ dependencies = [
     "shapely>=2.1.2,<3",
     "structlog>=25.5,<26",
 ]
+urls.Homepage = "https://github.com/frandorr/aer-search-earthaccess"
+urls.Issues = "https://github.com/frandorr/aer-search-earthaccess/issues"
+urls.Repository = "https://github.com/frandorr/aer-search-earthaccess"
 
 [project.entry-points."aer.plugins"]
 search_earthaccess = "aer.search_earthaccess.core:search_earthaccess"
 
-[tool.hatch.build.targets.wheel]
-packages = ["aer-search-earthaccess"]
+[tool.hatch]
+build.hooks.polylith-bricks = {}
+build.targets.wheel.packages = ["aer"]
 
-[tool.hatch.build.hooks.polylith-bricks]
-
-[tool.polylith.bricks]
+[tool.polylith]
+bricks."../../components/aer/search_earthaccess" = "aer/search_earthaccess"
