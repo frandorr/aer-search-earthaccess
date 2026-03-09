@@ -10,8 +10,9 @@ from aer.search import SearchQuery
 from aer.search_earthaccess import search_earthaccess
 from aer.search_earthaccess.core import _parse_umm_polygon
 from aer.temporal import TimeRange
-from aer.product_viirs_earthaccess import VNP02IMG_EA
-from aer.product_modis_earthaccess import MODIS_02QKM_EA
+from aer.spectral import Product
+VNP02IMG_EA = Product.get("VNP02IMG")
+MODIS_02QKM_EA = Product.get("MOD02QKM")
 from aer.spatial import GridCell, GridSpatialExtent, GridDefinition
 
 GRID_FIXTURE_PATH = (
@@ -116,7 +117,7 @@ def test_search_earthaccess_real_modis():
 
 @pytest.mark.slow
 def test_search_earthaccess_real_multiple():
-    from aer.product_viirs_earthaccess import VNP03IMG_EA
+    VNP03IMG_EA = Product.get("VNP03IMG")
 
     time_range = TimeRange(
         start=datetime(2024, 1, 1, 0, 0), end=datetime(2024, 1, 1, 1, 0)

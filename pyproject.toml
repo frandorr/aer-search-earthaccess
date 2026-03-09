@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
 authors = [{ name = "Fran Dorr" }]
-dependencies = ["aer-core"]
+dependencies = ["aer-core", "earthaccess>=0.16.0,<0.17.0"]
 
 [project.entry-points."aer.plugins"]
 search_earthaccess = "aer.search_earthaccess.core:search_earthaccess"

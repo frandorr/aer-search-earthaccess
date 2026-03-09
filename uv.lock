@@ -22,6 +22,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aer-core" },
+    { name = "earthaccess" },
 ]
 
 [package.dev-dependencies]
@@ -32,7 +33,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "aer-core" }]
+requires-dist = [
+    { name = "aer-core" },
+    { name = "earthaccess", specifier = ">=0.16.0,<0.17.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -65,7 +69,7 @@ wheels = [
 
 [[package]]
 name = "aer-search-earthaccess"
-version = "1.0.2"
+version = "1.0.3"
 source = { editable = "projects/aer-search-earthaccess" }
 dependencies = [
     { name = "aer-core" },
