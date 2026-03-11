@@ -169,17 +169,21 @@ def test_search_earthaccess_with_satellites_filter():
     SNPP = Satellite.get("SNPP")
 
     with patch("aer.search_earthaccess.core.earthaccess.search_data") as mock_search:
-        mock_search.return_value = []
-        query = SearchQuery(
-            products=[VNP02IMG_EA],
-            time_range=time_range,
-            satellites=(SNPP,)
-        )
-        search_earthaccess(query)
-        mock_search.assert_called_once()
-        kwargs = mock_search.call_args.kwargs
-        assert "platform" in kwargs
-        assert kwargs["platform"] == ["SNPP"]
+        with patch("aer.search_earthaccess.core.logger.warning") as mock_warning:
+            mock_search.return_value = []
+            query = SearchQuery(
+                products=[VNP02IMG_EA],
+                time_range=time_range,
+                satellites=(SNPP,)
+            )
+            search_earthaccess(query)
+            mock_search.assert_called_once()
+            kwargs = mock_search.call_args.kwargs
+            
+            # We explicitly removed platform from kwargs, and added a warning log
+            assert "platform" not in kwargs
+            # Ensure the warning was logged
+            mock_warning.assert_called_with("Satellites filter not available in this plugin")
 
 
 def test_search_earthaccess_with_channels_filtering_products():
@@ -194,7 +198,6 @@ def test_search_earthaccess_with_channels_filtering_products():
     with patch("aer.search_earthaccess.core.earthaccess.search_data") as mock_search:
         mock_search.return_value = []
         # Querying for both products, but only requesting I1 channel
-        # This should only search for VNP02IMG because MOD02QKM doesn't have I1
         query = SearchQuery(
             products=[VNP02IMG_EA, MODIS_02QKM_EA],
             time_range=time_range,
@@ -203,8 +206,9 @@ def test_search_earthaccess_with_channels_filtering_products():
         search_earthaccess(query)
         mock_search.assert_called_once()
         kwargs = mock_search.call_args.kwargs
-        # Should NOT include MODIS in short_name
-        assert kwargs["short_name"] == [VNP02IMG_EA.name]
+        
+        # Since channels filter on products was removed, both are included
+        assert set(kwargs["short_name"]) == {VNP02IMG_EA.name, MODIS_02QKM_EA.name}
 
 
 

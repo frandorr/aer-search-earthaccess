@@ -129,29 +129,12 @@ def _prepare_search_params(query: SearchQuery) -> dict[str, Any]:
         minx, miny, maxx, maxy = all_bounds.bounds
         kwargs["bounding_box"] = (minx, miny, maxx, maxy)
 
-    filtered_products = query.products
     # Filter products by satellites support
     if query.satellites:
-        filtered_products = [
-            p
-            for p in filtered_products
-            if not set(query.satellites).isdisjoint(p.supported_satellites)
-        ]
-        # Only override platform if not already specified in options
-        if "platform" not in kwargs:
-            kwargs["platform"] = [s.name for s in query.satellites]
-
-    # Filter products by channel availability
-    if query.channels:
-        filtered_products = [
-            p for p in filtered_products if not set(query.channels).isdisjoint(set(p.channels))
-        ]
-
-    if filtered_products and "instrument" not in kwargs:
-        kwargs["instrument"] = list({p.instrument.name for p in filtered_products})
+        logger.warning("Satellites filter not available in this plugin")
 
     return {
-        "short_name": [p.name for p in filtered_products],
+        "short_name": [p.name for p in query.products],
         "temporal": temporal,
         **kwargs,
     }
