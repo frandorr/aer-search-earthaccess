@@ -161,6 +161,52 @@ def test_search_earthaccess_real_multiple_constellations():
         f"Expected to find {MODIS_02QKM_EA.name} in results"
     )
 
+def test_search_earthaccess_with_satellites_filter():
+    time_range = TimeRange(
+        start=datetime(2023, 1, 1, 0, 0), end=datetime(2023, 1, 1, 1, 0)
+    )
+    from aer.spectral import Satellite
+    SNPP = Satellite.get("SNPP")
+
+    with patch("aer.search_earthaccess.core.earthaccess.search_data") as mock_search:
+        mock_search.return_value = []
+        query = SearchQuery(
+            products=[VNP02IMG_EA],
+            time_range=time_range,
+            satellites=(SNPP,)
+        )
+        search_earthaccess(query)
+        mock_search.assert_called_once()
+        kwargs = mock_search.call_args.kwargs
+        assert "platform" in kwargs
+        assert kwargs["platform"] == ["SNPP"]
+
+
+def test_search_earthaccess_with_channels_filtering_products():
+    time_range = TimeRange(
+        start=datetime(2023, 1, 1, 0, 0), end=datetime(2023, 1, 1, 1, 0)
+    )
+    # VNP02IMG has I-bands (I1, I2, etc.)
+    # MOD02QKM has bands (1, 2) 
+    # Let's verify their channel IDs.
+    i1_band = [c for c in VNP02IMG_EA.channels if c.c_id == "I1"][0]
+    
+    with patch("aer.search_earthaccess.core.earthaccess.search_data") as mock_search:
+        mock_search.return_value = []
+        # Querying for both products, but only requesting I1 channel
+        # This should only search for VNP02IMG because MOD02QKM doesn't have I1
+        query = SearchQuery(
+            products=[VNP02IMG_EA, MODIS_02QKM_EA],
+            time_range=time_range,
+            channels=(i1_band,)
+        )
+        search_earthaccess(query)
+        mock_search.assert_called_once()
+        kwargs = mock_search.call_args.kwargs
+        # Should NOT include MODIS in short_name
+        assert kwargs["short_name"] == [VNP02IMG_EA.name]
+
+
 
 def test_search_earthaccess_with_spatial_extent():
     time_range = TimeRange(

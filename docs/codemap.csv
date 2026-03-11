@@ -1,0 +1,5 @@
+filepath|summary|public_api|dependencies
+components/aer/search_earthaccess|Search implementation for NASA Earthdata using earthaccess.|search_earthaccess, NoSpatialMetadataError|plugin, search
+components/aer/search_earthaccess/core.py|||plugin, search
+test/components/aer/search_earthaccess/test_core.py|||search, search_earthaccess, spatial, spectral, temporal
+test/components/aer/search_earthaccess/__init__.py|||

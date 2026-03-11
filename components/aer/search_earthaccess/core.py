@@ -129,8 +129,29 @@ def _prepare_search_params(query: SearchQuery) -> dict[str, Any]:
         minx, miny, maxx, maxy = all_bounds.bounds
         kwargs["bounding_box"] = (minx, miny, maxx, maxy)
 
+    filtered_products = query.products
+    # Filter products by satellites support
+    if query.satellites:
+        filtered_products = [
+            p
+            for p in filtered_products
+            if not set(query.satellites).isdisjoint(p.supported_satellites)
+        ]
+        # Only override platform if not already specified in options
+        if "platform" not in kwargs:
+            kwargs["platform"] = [s.name for s in query.satellites]
+
+    # Filter products by channel availability
+    if query.channels:
+        filtered_products = [
+            p for p in filtered_products if not set(query.channels).isdisjoint(set(p.channels))
+        ]
+
+    if filtered_products and "instrument" not in kwargs:
+        kwargs["instrument"] = list({p.instrument.name for p in filtered_products})
+
     return {
-        "short_name": [p.name for p in query.products],
+        "short_name": [p.name for p in filtered_products],
         "temporal": temporal,
         **kwargs,
     }
@@ -159,12 +180,16 @@ def _granule_to_row(
     coll_ref = umm.get("CollectionReference", {})
     extracted_product_name = coll_ref.get("ShortName")
 
-    if query.channels is not None:
-        row_channels = query.channels
-    elif extracted_product_name and extracted_product_name in product_by_name:
-        row_channels = product_by_name[extracted_product_name].channels
+    if extracted_product_name and extracted_product_name in product_by_name:
+        p = product_by_name[extracted_product_name]
+        if query.channels is not None:
+            # Only include the requested channels which are available in this product
+            row_channels = tuple(c for c in query.channels if c in p.channels)
+        else:
+            row_channels = p.channels
     else:
-        row_channels = ()
+        # Fallback if product unknown
+        row_channels = query.channels if query.channels is not None else ()
 
     # Footprint geometry
     poly_result = _parse_umm_polygon(umm)
