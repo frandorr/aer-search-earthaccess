@@ -47,7 +47,7 @@ dev = [
 
 [[package]]
 name = "aer-core"
-version = "1.1.0"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -57,19 +57,20 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyproj" },
     { name = "pyresample" },
+    { name = "pyyaml" },
     { name = "returns", extra = ["compatible-mypy"] },
     { name = "shapely" },
     { name = "structlog" },
     { name = "utm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/09/9ee6050ad86cf86fe0f4ec11e866009db5404851677aa1d9faaae40cc8ab/aer_core-1.1.0.tar.gz", hash = "sha256:23ee78d9cf2a36d87d7ce683deb0a03143757f510f4434cf2061a76fb4e3deb6", size = 722553, upload-time = "2026-03-07T02:33:03.853Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0a/91/6f96e0b4cff0fe1e4f9de058154c8412219160767c1ed0c57372b3c60166/aer_core-2.0.0.tar.gz", hash = "sha256:899e6339b816742980d401f1967a86ef546b171434d070eaeaab1f9e2b15151d", size = 726471, upload-time = "2026-03-10T19:47:53.079Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/59/95d2dff18d3e6abfc7b67aca13114c4b95b1199d90d780104ce5bb3ede8e/aer_core-1.1.0-py3-none-any.whl", hash = "sha256:a6f439696506693c3698afb1e6353e6ee633c75288c0d440b2a78a256c93c9aa", size = 738163, upload-time = "2026-03-07T02:33:02.065Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/0c/6b180f5010bc8d73b2d26bc916c8193bed0c002b3c142ccc609c2df0af7c/aer_core-2.0.0-py3-none-any.whl", hash = "sha256:638fac59febf234553c0861b63fad823519b9a8556fc3845c167207dabe12e3e", size = 742310, upload-time = "2026-03-10T19:47:51.2Z" },
 ]
 
 [[package]]
 name = "aer-search-earthaccess"
-version = "1.0.3"
+version = "1.1.1"
 source = { editable = "projects/aer-search-earthaccess" }
 dependencies = [
     { name = "aer-core" },
@@ -84,7 +85,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aer-core", specifier = ">=1.1.0,<2.0.0" },
+    { name = "aer-core" },
     { name = "attrs", specifier = ">=25.4,<26" },
     { name = "earthaccess", specifier = ">=0.16,<0.17" },
     { name = "geopandas", specifier = ">=1.1.2,<2" },
