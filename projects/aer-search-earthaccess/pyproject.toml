@@ -12,7 +12,7 @@ authors = [{ name = "Fran Dorr" }]
 requires-python = ">=3.13"
 
 dependencies = [
-    "aer-core>=1.1.0,<2.0.0",
+    "aer-core",
     "attrs>=25.4,<26",
     "earthaccess>=0.16,<0.17",
     "geopandas>=1.1.2,<2",
