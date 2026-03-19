@@ -51,6 +51,7 @@ dev = [
     "polylith-cli>=1.43.0,<2.0.0",
     "pyarrow>=23.0.1,<24.0.0",
     "pytest>=9.0.2,<10.0.0",
+    "pytest-cov>=7.0.0,<8.0.0",
     "python-semantic-release>=10.5.3,<11.0.0",
 ]
 

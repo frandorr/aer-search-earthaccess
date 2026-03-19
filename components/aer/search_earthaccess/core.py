@@ -67,9 +67,7 @@ def _parse_umm_polygon(
             coords = [(p.get("Longitude", 0), p.get("Latitude", 0)) for p in points]
             return result.Success(Polygon(coords))
 
-    return result.Failure(
-        NoSpatialMetadataError("Granule has no usable spatial metadata in UMM")
-    )
+    return result.Failure(NoSpatialMetadataError("Granule has no usable spatial metadata in UMM"))
 
 
 @plugin(name="earthaccess", category="search")
@@ -93,6 +91,9 @@ def search_earthaccess(query: SearchQuery) -> GeoDataFrame["SearchResultSchema"]
         "s3_url",
         "https_url",
         "size_mb",
+        "overlapping_spatial_extent",
+        "input_spatial_extent",
+        "cell_overlap_mode",
     ]
     columns = [*base_columns, "grid_cells"] if query.spatial_extent else base_columns
 
@@ -123,9 +124,7 @@ def _prepare_search_params(query: SearchQuery) -> dict[str, Any]:
     kwargs = dict(query.options)
     # Apply bounding box filter if spatial_extent is provided
     if query.spatial_extent and query.spatial_extent.grid_cells:
-        all_bounds = unary_union(
-            [cell.bounds for cell in query.spatial_extent.grid_cells]
-        )
+        all_bounds = unary_union([cell.bounds for cell in query.spatial_extent.grid_cells])
         minx, miny, maxx, maxy = all_bounds.bounds
         kwargs["bounding_box"] = (minx, miny, maxx, maxy)
 
@@ -196,29 +195,27 @@ def _granule_to_row(
         "https_url": https_url,
         "size_mb": granule.size(),
         "channels": row_channels,
+        "input_spatial_extent": query.spatial_extent,
+        "cell_overlap_mode": query.cell_overlap_mode,
+        "overlapping_spatial_extent": None,
     }
 
     if query.spatial_extent:
-        row_data["grid_cells"] = _calculate_grid_cells(
-            granule_poly, query.spatial_extent, query.cell_overlap_mode
-        )
+        overlapping_cells = _calculate_grid_cells(granule_poly, query.spatial_extent, query.cell_overlap_mode)
+        if overlapping_cells:
+            from aer.spatial import GridSpatialExtent
+
+            row_data["overlapping_spatial_extent"] = GridSpatialExtent(frozenset(overlapping_cells))
+        row_data["grid_cells"] = [f"{cell.row}_{cell.col}" for cell in overlapping_cells]
 
     return row_data, granule_poly
 
 
-def _calculate_grid_cells(
-    granule_poly: Optional[Polygon], spatial_extent: Any, overlap_mode: str
-) -> list[str]:
+def _calculate_grid_cells(granule_poly: Optional[Polygon], spatial_extent: Any, overlap_mode: str) -> list[Any]:
     """Determine which grid cells overlap with the granule footprint."""
     if granule_poly is None:
         return []
 
-    overlap_fn = (
-        granule_poly.contains if overlap_mode == "contains" else granule_poly.intersects
-    )
+    overlap_fn = granule_poly.contains if overlap_mode == "contains" else granule_poly.intersects
 
-    return [
-        f"{cell.row}_{cell.col}"
-        for cell in spatial_extent.grid_cells
-        if overlap_fn(cell.bounds)
-    ]
+    return [cell for cell in spatial_extent.grid_cells if overlap_fn(cell.bounds)]
