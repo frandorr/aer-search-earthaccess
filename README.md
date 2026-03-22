@@ -1,126 +1,86 @@
-# Python Polylith Template with `uv`
+# aer-search-earthaccess
 
-A minimal template repository for Python projects using the [Polylith architecture](https://davidvujic.github.io/python-polylith-docs/setup/), powered by `uv` for lightning-fast dependency management, and `prek` for git hooks.
+A Polylith-based search plugin for EarthData using the [`earthaccess`](https://github.com/nsidc/earthaccess) library.
 
-## Philosophy
+## Authentication
 
-This repository is designed to be a clean, modern starting point for teams looking to use:
-* **Polylith** for a modular, monorepo-friendly and maintainable architecture.
-* **uv** for exceptionally fast and reliable Python packaging and virtual environments.
-* **prek** for lightweight, tool-managed git hooks instead of traditional pre-commit.
+This plugin requires an EarthData account. You can provide credentials in one of the following ways:
 
----
+### Environment Variables or `.env` file
+Set the following environment variables in your system or in a `.env` file in the project root:
+- `EARTHDATA_USERNAME`: Your EarthData username.
+- `EARTHDATA_PASSWORD`: Your EarthData password.
 
-## Getting Started
-
-### Prerequisites
-
-To get started, you don't need anything pre-installed if you use the provided setup script. The setup script will automatically install `uv` (if not present) and `prek`. If you prefer to set things up manually, ensure you have `uv` installed.
-
-### Automatic Setup
-
-Run the setup script:
-
+### `.netrc` file
+Alternatively, ensure a `~/.netrc` file exists with the following data:
 ```bash
-./setup.sh
+machine urs.earthdata.nasa.gov login <username> password <password>
 ```
 
-The script will automatically do the heavy lifting:
-1. Prompt you for a simple project name.
-2. Update the `name` in `pyproject.toml` and the `namespace` in `workspace.toml` automatically.
-3. Install `uv` (if it's not already installed on your system).
-4. Add `polylith-cli` as a development dependency and run `uv sync` to set up your virtual environment.
-5. Install `prek` globally via `uv tool install prek`.
+## Usage Example
+
+```python
+from aer.spatial import GridDefinition
+from aer.plugin import plugin_registry
+from aer.search import SearchQuery
+from aer.temporal import TimeRange
+from aer.spectral import Product
+from datetime import datetime
+from shapely.geometry import Polygon
+
+# 1. Define your spatial search area (e.g., using a global grid)
+grid = GridDefinition(name="global", dist=100)
+
+# Target polygon over central Mexico to ensure valid search footprint
+poly = Polygon([(-102, 18), (-98, 18), (-98, 22), (-102, 22), (-102, 18)])
+spatial_extent = grid.intersecting_grid_spatial_extent(poly)
+
+# 2. Get the product you want to search (e.g., VIIRS VNP02IMG)
+VNP02IMG_EA = Product.get("VNP02IMG")
+
+# 3. Build your SearchQuery
+query = SearchQuery(
+    products=[VNP02IMG_EA],
+    time_range=TimeRange(
+        start=datetime(2025, 6, 1, 0, 0),
+        end=datetime(2025, 6, 1, 18, 0),
+    ),
+    satellites=VNP02IMG_EA.supported_satellites,
+    spatial_extent=spatial_extent,
+    channels=VNP02IMG_EA.channels[:1],
+    cell_overlap_mode="intersects",  # Can be "intersects" or "contains"
+    options={"count": 5},            # Additional earthaccess search parameters
+)
+
+# 4. Get the search plugin and run the query
+search = plugin_registry.get("earthaccess")
+gdf = search(query)
+
+# The result is a GeoDataFrame where each row is a granule that overlaps with your spatial extent
+print(gdf.head())
+```
 
 ---
 
 ## Project Structure
 
-Polylith organizes your codebase into interchangeable blocks, prioritizing composability:
+Polylith organizes your codebase into interchangeable blocks:
 
-* `components/` – Reusable functional blocks (the core logic). They are the lego bricks of your application.
-* `bases/` – Application entry points (e.g., an API router, a CLI task, or an AWS Lambda handler), acting as the outer shell exposing features.
-* `projects/` – Deployable artifacts that compose one or more bases and components. They do not contain logic directly, just assembling the pieces.
+* `components/` – Reusable functional blocks (the core logic).
+* `bases/` – Application entry points.
+* `projects/` – Deployable artifacts that compose one or more bases and components.
 
-For more detailed information about Polylith and how its concepts apply in Python, check out the [official Python Polylith Documentation](https://davidvujic.github.io/python-polylith-docs/setup/).
-
-### Creating Blocks
-
-You can create components, bases, and projects effortlessly using the Polylith CLI (which is available via `uv run` once synced):
-
-```bash
-# Create a new component
-uv run poly create component --name my_component
-
-# Create a new base
-uv run poly create base --name my_base
-
-# Create a new project
-uv run poly create project --name my_project
-```
-
-### Creating Plugins (aer)
-
-In `aer`, plugins typically consist of a component (for the logic) and a project (for packaging). You can use the Polylith CLI to create these.
-
-**Important Rules**:
-- **Prefix**: Plugin projects must use the `aer-` prefix (e.g., `aer-search-myprovider`) to be easily discoverable and identifiable within the ecosystem.
-- **Versioning**: Plugins should use [Semantic Versioning](https://semver.org/) (SemVer) for their releases.
-
-**Example: Creating a Search Plugin**
-```bash
-uv run poly create component --name search_myprovider
-uv run poly create project --name aer-search-myprovider
-```
-
-After implementing your logic (e.g., `search_myprovider(request: SearchRequest) -> SearchResult`), register the plugin in the project's `pyproject.toml` so `aer-core` can discover it:
-```toml
-[project.entry-points."aer.plugins"]
-myprovider = "aer.search_myprovider.core:search_myprovider"
-```
-
-**Example: Creating a Spectral Plugin**
-```bash
-uv run poly create component --name spectral_myinstrument
-uv run poly create project --name aer-spectral-myinstrument
-```
-
-Register the spectral plugin in its `pyproject.toml` similarly:
-```toml
-[project.entry-points."aer.plugins"]
-myinstrument = "aer.spectral_myinstrument.core:spectral_myinstrument"
-```
-
-### Inspecting the Workspace
-
-Polylith shines at giving you an overview of your monorepo. Check your projects, bases, and components with:
-
-```bash
-uv run poly info
-```
-
----
-
-## Development Workflow
+### Development Workflow
 
 1. **Install dependencies:**  
-   If you need to manually sync your environment or add third-party dependencies, use `uv`:
    ```bash
    uv sync
-   uv add requests
-   uv add --group dev pytest
    ```
 
 2. **Run tests:**  
-   You can run your tests across the entire workspace easily using `pytest`. The template enables tests globally across components:
    ```bash
    uv run pytest
    ```
-
-3. **Hooks (prek):**  
-   We use `prek` for streamlined commit checks. The setup script installs it globally via `uv tool install prek`. You can use it to configure git workflows without heavy external dependencies.
-
----
 
 ## License
 
