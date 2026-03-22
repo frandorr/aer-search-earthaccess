@@ -330,7 +330,7 @@ def test_search_earthaccess_intersects_mode():
             cell_overlap_mode="contains",
         )
         df_contains = search_earthaccess(query_contains)
-        assert df_contains.iloc[0]["grid_cells"] == []
+        assert df_contains.empty
 
         # "intersects" mode SHOULD match (partial overlap)
         query_intersects = SearchQuery(

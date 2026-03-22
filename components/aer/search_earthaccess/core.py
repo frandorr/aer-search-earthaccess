@@ -107,8 +107,17 @@ def search_earthaccess(query: SearchQuery) -> GeoDataFrame["SearchResultSchema"]
 
     for granule in results:
         row_data, granule_poly = _granule_to_row(granule, query, product_by_name)
+
+        # Filter: If spatial_extent is provided, skip granules that don't overlap any cell
+        if query.spatial_extent and row_data["overlapping_spatial_extent"] is None:
+            continue
+
         rows.append(row_data)
         geometries.append(granule_poly)
+
+    if not rows:
+        gdf = gpd.GeoDataFrame(columns=[*columns, "geometry"], geometry="geometry")
+        return SearchResultSchema.validate(gdf)
 
     gdf = gpd.GeoDataFrame(rows, geometry=geometries)
     return SearchResultSchema.validate(gdf)
@@ -130,7 +139,7 @@ def _prepare_search_params(query: SearchQuery) -> dict[str, Any]:
 
     # Filter products by satellites support
     if query.satellites:
-        logger.warning("Satellites filter not available in this plugin")
+        logger.warning("Satellites filter not available in this plugin, ignoring satellite filter.")
 
     return {
         "short_name": [p.name for p in query.products],
