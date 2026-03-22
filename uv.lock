@@ -74,7 +74,7 @@ wheels = [
 
 [[package]]
 name = "aer-search-earthaccess"
-version = "2.0.0"
+version = "2.0.1"
 source = { editable = "projects/aer-search-earthaccess" }
 dependencies = [
     { name = "aer-core" },

@@ -159,7 +159,7 @@ def test_search_earthaccess_with_satellites_filter():
             # We explicitly removed platform from kwargs, and added a warning log
             assert "platform" not in kwargs
             # Ensure the warning was logged
-            mock_warning.assert_called_with("Satellites filter not available in this plugin")
+            mock_warning.assert_called_with("Satellites filter not available in this plugin, ignoring satellite filter.")
 
 
 def test_search_earthaccess_with_channels_filtering_products():

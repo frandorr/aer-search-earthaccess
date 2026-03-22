@@ -9,6 +9,7 @@ from structlog import get_logger
 from datetime import datetime
 from aer.plugin import plugin
 from aer.search import SearchQuery, SearchResultSchema
+from aer.spatial import GridSpatialExtent
 from pandera.typing.geopandas import GeoDataFrame
 
 logger = get_logger()
@@ -108,6 +109,10 @@ def search_earthaccess(query: SearchQuery) -> GeoDataFrame["SearchResultSchema"]
     for granule in results:
         row_data, granule_poly = _granule_to_row(granule, query, product_by_name)
 
+        # Skip granules with missing temporal metadata
+        if row_data is None:
+            continue
+
         # Filter: If spatial_extent is provided, skip granules that don't overlap any cell
         if query.spatial_extent and row_data["overlapping_spatial_extent"] is None:
             continue
@@ -167,6 +172,15 @@ def _granule_to_row(
     start_time = range_dt.get("BeginningDateTime")
     end_time = range_dt.get("EndingDateTime")
 
+    if not start_time or not end_time:
+        logger.warning(
+            "Skipping granule with missing temporal metadata",
+            granule_id=meta.get("native-id"),
+            start_time=start_time,
+            end_time=end_time,
+        )
+        return None, None
+
     # Short name and channels
     coll_ref = umm.get("CollectionReference", {})
     extracted_product_name = coll_ref.get("ShortName")
@@ -212,8 +226,6 @@ def _granule_to_row(
     if query.spatial_extent:
         overlapping_cells = _calculate_grid_cells(granule_poly, query.spatial_extent, query.cell_overlap_mode)
         if overlapping_cells:
-            from aer.spatial import GridSpatialExtent
-
             row_data["overlapping_spatial_extent"] = GridSpatialExtent(frozenset(overlapping_cells))
         row_data["grid_cells"] = [f"{cell.row}_{cell.col}" for cell in overlapping_cells]
 
