@@ -83,23 +83,9 @@ def search_earthaccess(query: SearchQuery) -> GeoDataFrame["SearchResultSchema"]
     search_params = _prepare_search_params(query)
     results = earthaccess.search_data(**search_params)
 
-    # Columns to ensure in the result
-    base_columns = [
-        "product_name",
-        "granule_id",
-        "start_time",
-        "end_time",
-        "s3_url",
-        "https_url",
-        "size_mb",
-        "overlapping_spatial_extent",
-        "input_spatial_extent",
-        "cell_overlap_mode",
-    ]
-    columns = [*base_columns, "grid_cells"] if query.spatial_extent else base_columns
-
     if not results:
-        gdf = gpd.GeoDataFrame(columns=[*columns, "geometry"], geometry="geometry")
+        columns = list(SearchResultSchema.to_schema().columns.keys())
+        gdf = gpd.GeoDataFrame(columns=columns, geometry="geometry")
         return SearchResultSchema.validate(gdf)
 
     product_by_name = {p.name: p for p in query.products}
@@ -107,21 +93,23 @@ def search_earthaccess(query: SearchQuery) -> GeoDataFrame["SearchResultSchema"]
     geometries = []
 
     for granule in results:
-        row_data, granule_poly = _granule_to_row(granule, query, product_by_name)
+        granule_rows, granule_poly = _granule_to_rows(granule, query, product_by_name)
 
         # Skip granules with missing temporal metadata
-        if row_data is None:
+        if granule_rows is None:
             continue
 
         # Filter: If spatial_extent is provided, skip granules that don't overlap any cell
-        if query.spatial_extent and row_data["overlapping_spatial_extent"] is None:
+        if query.spatial_extent and not granule_rows:
             continue
 
-        rows.append(row_data)
-        geometries.append(granule_poly)
+        for row_data in granule_rows:
+            rows.append(row_data)
+            geometries.append(granule_poly)
 
     if not rows:
-        gdf = gpd.GeoDataFrame(columns=[*columns, "geometry"], geometry="geometry")
+        columns = list(SearchResultSchema.to_schema().columns.keys())
+        gdf = gpd.GeoDataFrame(columns=columns, geometry="geometry")
         return SearchResultSchema.validate(gdf)
 
     gdf = gpd.GeoDataFrame(rows, geometry=geometries)
@@ -153,10 +141,10 @@ def _prepare_search_params(query: SearchQuery) -> dict[str, Any]:
     }
 
 
-def _granule_to_row(
+def _granule_to_rows(
     granule: Any, query: SearchQuery, product_by_name: dict[str, Any]
-) -> tuple[dict[str, Any], Optional[Polygon]]:
-    """Map a single earthaccess granule to a GeoDataFrame row and its geometry."""
+) -> tuple[list[dict[str, Any]], Optional[Polygon]]:
+    """Map a single earthaccess granule to exploded rows (one per cell/channel)."""
     meta = granule.get("meta", {})
     umm = granule.get("umm", {})
 
@@ -187,13 +175,11 @@ def _granule_to_row(
 
     if extracted_product_name and extracted_product_name in product_by_name:
         p = product_by_name[extracted_product_name]
-        if query.channels is not None:
-            # Only include the requested channels which are available in this product
+        if query.channels:
             row_channels = tuple(c for c in query.channels if c in p.channels)
         else:
             row_channels = p.channels
     else:
-        # Fallback if product unknown
         row_channels = query.channels if query.channels is not None else ()
 
     # Footprint geometry
@@ -209,27 +195,49 @@ def _granule_to_row(
                 granule_id=meta.get("native-id"),
             )
 
-    row_data: dict[str, Any] = {
-        "product_name": extracted_product_name,
+    base_row = {
+        "product_id": extracted_product_name,
         "granule_id": meta.get("native-id"),
         "start_time": datetime.fromisoformat(start_time.replace("Z", "+00:00")),
         "end_time": datetime.fromisoformat(end_time.replace("Z", "+00:00")),
         "s3_url": s3_url,
         "https_url": https_url,
         "size_mb": granule.size(),
-        "channels": row_channels,
-        "input_spatial_extent": query.spatial_extent,
-        "cell_overlap_mode": query.cell_overlap_mode,
-        "overlapping_spatial_extent": None,
+        "overlap_mode": query.cell_overlap_mode,
     }
 
-    if query.spatial_extent:
-        overlapping_cells = _calculate_grid_cells(granule_poly, query.spatial_extent, query.cell_overlap_mode)
-        if overlapping_cells:
-            row_data["overlapping_spatial_extent"] = GridSpatialExtent(frozenset(overlapping_cells))
-        row_data["grid_cells"] = [f"{cell.row}_{cell.col}" for cell in overlapping_cells]
+    if not query.spatial_extent or not granule_poly:
+        # If no spatial extent is provided, we return an empty list as we can't
+        # create valid SearchResultSchema rows without grid information.
+        return [], granule_poly
 
-    return row_data, granule_poly
+    overlapping_cells = _calculate_grid_cells(granule_poly, query.spatial_extent, query.cell_overlap_mode)
+    if not overlapping_cells:
+        return [], granule_poly
+
+    rows = []
+    for cell in overlapping_cells:
+        for channel in row_channels:
+            # unique_id as name, channel.c_id and granule_id
+            cell_name = f"{cell.row}_{cell.col}"
+            unique_id = f"{cell_name}_{channel.c_id}_{base_row['granule_id']}"
+            
+            # SearchResultSchema inherits from GridSchema, so it needs all grid fields.
+            # Some are missing from from_grid_cell in aer-core, so we provide them here.
+            row = SearchResultSchema.from_grid_cell(
+                cell,
+                channel,
+                unique_id=unique_id,
+                name=cell_name,
+                row_idx=0,  # Dummy as it's not in GridCell but mandatory in schema
+                col_idx=0,  # Dummy
+                utm_zone=cell.epsg.split(":")[-1],
+                geometry=granule_poly,
+                **base_row,
+            )
+            rows.append(row)
+
+    return rows, granule_poly
 
 
 def _calculate_grid_cells(granule_poly: Optional[Polygon], spatial_extent: Any, overlap_mode: str) -> list[Any]:
@@ -238,5 +246,5 @@ def _calculate_grid_cells(granule_poly: Optional[Polygon], spatial_extent: Any, 
         return []
 
     overlap_fn = granule_poly.contains if overlap_mode == "contains" else granule_poly.intersects
-
-    return [cell for cell in spatial_extent.grid_cells if overlap_fn(cell.bounds)]
+    cells = [cell for cell in spatial_extent.grid_cells if overlap_fn(cell.bounds)]
+    return cells
