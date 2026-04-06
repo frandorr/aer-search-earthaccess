@@ -36,7 +36,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aer-core" },
+    { name = "aer-core", directory = "../aer/projects/aer-core" },
     { name = "earthaccess", specifier = ">=0.16.0,<0.17.0" },
 ]
 
@@ -51,8 +51,8 @@ dev = [
 
 [[package]]
 name = "aer-core"
-version = "3.2.0"
-source = { registry = "https://pypi.org/simple" }
+version = "3.4.0"
+source = { directory = "../aer/projects/aer-core" }
 dependencies = [
     { name = "attrs" },
     { name = "geopandas" },
@@ -67,14 +67,26 @@ dependencies = [
     { name = "structlog" },
     { name = "utm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/75/1a/d3bba850d3bc660d14451dfe2e88f05941115f228fb31d490d1e7ff16b67/aer_core-3.2.0.tar.gz", hash = "sha256:902b1a18d31100ab44c419fb2292f88f6b2580a5751a801f75eca45882f0dcd9", size = 731185, upload-time = "2026-03-25T00:25:13.793Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/0a/0ff9fb62d405aec62b7fcc642de7a345a2aa644fa8ace74e0b6c600137f4/aer_core-3.2.0-py3-none-any.whl", hash = "sha256:34b4708f05625218198eb04ac15a46a048dbaee49d9bd01969ca68301087b1e1", size = 751490, upload-time = "2026-03-25T00:25:11.792Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "attrs", specifier = ">=25.4" },
+    { name = "geopandas", specifier = ">=1.1.2" },
+    { name = "pandas", specifier = ">=3.0.1" },
+    { name = "pandera", extras = ["geopandas"], specifier = ">=0.24" },
+    { name = "pydantic-settings", specifier = ">=2.13.1" },
+    { name = "pyproj", specifier = ">=3.7.1" },
+    { name = "pyresample", specifier = ">=1.35" },
+    { name = "pyyaml", specifier = ">=6.0.1" },
+    { name = "returns", extras = ["compatible-mypy"], specifier = ">=0.26" },
+    { name = "shapely", specifier = ">=2.1.2" },
+    { name = "structlog", specifier = ">=25.5" },
+    { name = "utm", specifier = ">=0.8.1" },
 ]
 
 [[package]]
 name = "aer-search-earthaccess"
-version = "2.0.2"
+version = "2.0.3"
 source = { editable = "projects/aer-search-earthaccess" }
 dependencies = [
     { name = "aer-core" },
@@ -89,7 +101,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aer-core" },
+    { name = "aer-core", directory = "../aer/projects/aer-core" },
     { name = "attrs", specifier = ">=25.4,<26" },
     { name = "earthaccess", specifier = ">=0.16,<0.17" },
     { name = "geopandas", specifier = ">=1.1.2,<2" },
