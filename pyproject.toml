@@ -13,11 +13,14 @@ authors = [{ name = "Fran Dorr" }]
 dependencies = ["aer-core", "earthaccess>=0.16.0,<0.17.0"]
 
 [project.entry-points."aer.plugins"]
-search_earthaccess = "aer.search_earthaccess.core:search_earthaccess"
+search_earthaccess = "aer.search_earthaccess.core:EarthAccessSearchPlugin"
 
 [tool.uv]
 managed = true
 add-bounds = "major"
+
+[tool.uv.sources]
+aer-core = { path = "../aer/projects/aer-core" }
 
 [tool.uv.workspace]
 members = ["projects/*"]

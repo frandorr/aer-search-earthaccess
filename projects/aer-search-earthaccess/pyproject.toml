@@ -26,7 +26,7 @@ urls.Issues = "https://github.com/frandorr/aer-search-earthaccess/issues"
 urls.Repository = "https://github.com/frandorr/aer-search-earthaccess"
 
 [project.entry-points."aer.plugins"]
-search_earthaccess = "aer.search_earthaccess.core:search_earthaccess"
+search_earthaccess = "aer.search_earthaccess.core:EarthAccessSearchPlugin"
 
 [tool.hatch]
 build.hooks.polylith-bricks = {}

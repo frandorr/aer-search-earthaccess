@@ -2,6 +2,6 @@
 Search implementation for NASA Earthdata using earthaccess.
 """
 
-from aer.search_earthaccess.core import NoSpatialMetadataError, search_earthaccess
+from aer.search_earthaccess.core import EarthAccessSearchPlugin, NoSpatialMetadataError
 
-__all__ = ["search_earthaccess", "NoSpatialMetadataError"]
+__all__ = ["EarthAccessSearchPlugin", "NoSpatialMetadataError"]
