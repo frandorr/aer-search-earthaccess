@@ -4,11 +4,10 @@ from typing import Any
 import earthaccess
 import geopandas as gpd
 from pandas import Series
-from shapely.geometry import Polygon
+from shapely.geometry import MultiPolygon, Polygon
 from structlog import get_logger
 
 from aer.plugin.core import hookimpl, SearchResultSchema
-from aer.spatial import GeomLike
 from aer.temporal import TimeRange
 from pandera.typing.geopandas import GeoDataFrame
 
@@ -49,9 +48,7 @@ def _parse_umm_polygon(umm: dict[str, Any]) -> Polygon:
             min_y = rect.get("SouthBoundingCoordinate")
             max_y = rect.get("NorthBoundingCoordinate")
             if all(v is not None for v in (min_x, max_x, min_y, max_y)):
-                return Polygon(
-                    [(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)]
-                )
+                return Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
 
     raise NoSpatialMetadataError("Could not find GPolygon or BoundingRectangle in UMM")
 
@@ -61,9 +58,9 @@ class EarthAccessSearchPlugin:
     def search(
         self,
         collections: list[str],
-        intersects: GeomLike | None,
-        time_range: TimeRange | None,
-        search_params: dict | None,
+        intersects: Polygon | MultiPolygon | None = None,
+        time_range: TimeRange | None = None,
+        search_params: dict | None = None,
     ) -> GeoDataFrame["SearchResultSchema"]:
         """Search NASA Earthdata using earthaccess.
 
