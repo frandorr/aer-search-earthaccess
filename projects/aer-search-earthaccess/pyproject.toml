@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aer-search-earthaccess"
-version = "2.0.3"
+version = "2.0.4"
 description = "Polylith project for the earthaccess search plugin"
 readme = "README.md"
 authors = [{ name = "Fran Dorr" }]
