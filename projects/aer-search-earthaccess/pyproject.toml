@@ -29,6 +29,7 @@ urls.Repository = "https://github.com/frandorr/aer-search-earthaccess"
 search_earthaccess = "aer.search_earthaccess.core:EarthAccessSearchPlugin"
 
 [tool.hatch]
+build.dev-mode-dirs = [ "../../components", "../../bases", "../../development", "." ]
 build.hooks.polylith-bricks = {}
 build.targets.wheel.packages = ["aer"]
 

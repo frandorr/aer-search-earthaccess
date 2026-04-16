@@ -1,14 +1,17 @@
 import hashlib
-from typing import Any
+from datetime import datetime
+from collections.abc import Mapping, Sequence
+from typing import Any, cast, override
 
 import earthaccess
 import geopandas as gpd
 from pandas import Series
 from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry.base import BaseGeometry
 from structlog import get_logger
 
-from aer.plugin.core import hookimpl, SearchResultSchema
-from aer.temporal import TimeRange
+from aer.interfaces import SearchProvider
+from aer.schemas import AssetSchema
 from pandera.typing.geopandas import GeoDataFrame
 
 
@@ -53,15 +56,19 @@ def _parse_umm_polygon(umm: dict[str, Any]) -> Polygon:
     raise NoSpatialMetadataError("Could not find GPolygon or BoundingRectangle in UMM")
 
 
-class EarthAccessSearchPlugin:
-    @hookimpl
+class EarthAccessSearchPlugin(SearchProvider, plugin_abstract=False):
+    # EarthAccess theoretically supports all NASA collections, we use "*" as a wildcard.
+    supported_collections: Sequence[str] = ["*"]
+
+    @override
     def search(
         self,
-        collections: list[str],
-        intersects: Polygon | MultiPolygon | None = None,
-        time_range: TimeRange | None = None,
-        search_params: dict | None = None,
-    ) -> GeoDataFrame["SearchResultSchema"]:
+        collections: Sequence[str],
+        intersects: BaseGeometry | None = None,
+        start_datetime: datetime | None = None,
+        end_datetime: datetime | None = None,
+        search_params: Mapping[str, Any] | None = None,
+    ) -> GeoDataFrame[AssetSchema]:
         """Search NASA Earthdata using earthaccess.
 
         Args:
@@ -75,10 +82,10 @@ class EarthAccessSearchPlugin:
 
         kwargs: dict[str, Any] = {"short_name": collections}
 
-        if time_range:
+        if start_datetime and end_datetime:
             kwargs["temporal"] = (
-                time_range.start.strftime("%Y-%m-%d %H:%M:%S"),
-                time_range.end.strftime("%Y-%m-%d %H:%M:%S"),
+                start_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                end_datetime.strftime("%Y-%m-%d %H:%M:%S"),
             )
 
         if intersects is not None:
@@ -156,18 +163,16 @@ class EarthAccessSearchPlugin:
             return self._empty_result()
 
         gdf = gpd.GeoDataFrame(rows, geometry="geometry")
-        # Ensure start_time/end_time are datetime objects if the schema demands it
-        # (SearchResultSchema handles coercing string -> datetime but pandas to_datetime ensures consistent types)
         import pandas as pd
 
         gdf["start_time"] = pd.to_datetime(gdf["start_time"])
         gdf["end_time"] = pd.to_datetime(gdf["end_time"])
 
-        return SearchResultSchema.validate(gdf)
+        return cast(GeoDataFrame, AssetSchema.validate(gdf))
 
-    def _empty_result(self) -> GeoDataFrame["SearchResultSchema"]:
-        columns = list(SearchResultSchema.to_schema().columns.keys())
+    def _empty_result(self) -> GeoDataFrame[AssetSchema]:
+        columns = list(AssetSchema.to_schema().columns.keys())
         if "geometry" not in columns:
             columns.append("geometry")
         gdf = gpd.GeoDataFrame(columns=columns, geometry="geometry")
-        return SearchResultSchema.validate(gdf)
+        return cast(GeoDataFrame, AssetSchema.validate(gdf))
